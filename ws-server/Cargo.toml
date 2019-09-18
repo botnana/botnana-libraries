@@ -1,0 +1,12 @@
+[package]
+name = "ws-server"
+version ="0.1.0"
+authors = ["Mapacode Inc."]
+
+[dependencies]
+libc = "0.2"
+ws = "0.8"
+
+[lib]
+name="ws_server"
+crate-type = ["staticlib", "cdylib"]

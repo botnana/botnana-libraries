@@ -1,0 +1,8 @@
+**/target
+build
+release
+lib
+*.o
+*.orig
+*.md.html
+server
