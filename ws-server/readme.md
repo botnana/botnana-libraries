@@ -42,8 +42,8 @@ $ make arm
 For x86 
 $ make server_x86
 
-For arm
-$ make server_arm
+For arm64
+$ make server_arm64
 
 ```
 
