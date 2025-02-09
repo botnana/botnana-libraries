@@ -40,28 +40,28 @@ X86_64_LDFLAGS = ./lib/$(LIBRARY_NAME)_x86_64.a $(LDFLAGS)
 I686_LDFLAGS = ./lib/$(LIBRARY_NAME).a $(LDFLAGS)
 ARM64_LDFLAGS = ./lib/$(LIBRARY_NAME)_arm64.a $(LDFLAGS)
 
-server_x86_64: x86_64
-	$(X86_64_CC) $(CFLAGS) -O2 -c ./examples/server.c -o server.o
-	$(X86_64_CC) -o server server.o $(X86_64_LDFLAGS)
+c_server_x86_64: x86_64
+	$(X86_64_CC) $(CFLAGS) -O2 -c ./c_examples/c_server.c -o c_server.o
+	$(X86_64_CC) -o c_server c_server.o $(X86_64_LDFLAGS)
 
-server_i686: i686
-	$(I686_CC) $(CFLAGS) -O2 -c ./examples/server.c -o server.o
-	$(I686_CC) -o server server.o $(I686_LDFLAGS)
+c_server_i686: i686
+	$(I686_CC) $(CFLAGS) -O2 -c ./c_examples/c_server.c -o c_server.o
+	$(I686_CC) -o c_server c_server.o $(I686_LDFLAGS)
 	
-server_arm64: arm64  
-	$(ARM64_CC) $(CFLAGS) -O2 -c ./examples/server.c -o server.o
-	$(ARM64_CC) -o server server.o $(ARM64_LDFLAGS)
+c_server_arm64: arm64  
+	$(ARM64_CC) $(CFLAGS) -O2 -c ./c_examples/c_server.c -o c_server.o
+	$(ARM64_CC) -o c_server c_server.o $(ARM64_LDFLAGS)
 
 run:
-	./server
+	./c_server
 	
 scp:
-	scp server debian@192.168.7.2:/home/debian/server 
+	scp c_server debian@192.168.7.2:/home/debian/c_server 
 	
 debug:
-	RUST_BACKTRACE=1 ./advanserver 
+	RUST_BACKTRACE=1 ./c_server 
 
 .PHONY: clean
 	 
 clean: 
-	rm -rf server */*.c.orig */*.h.orig *.o	
+	rm -rf c_server */*.c.orig */*.h.orig *.o	
