@@ -35,7 +35,7 @@ update:
 	cargo update
 
 CFLAGS = -Isrc
-LDFLAGS = -ldl -pthread -lssl -lcrypto -lm -O2
+LDFLAGS = -ldl -pthread -lm -O2
 X86_64_LDFLAGS = ./lib/$(LIBRARY_NAME)_x86_64.a $(LDFLAGS)
 I686_LDFLAGS = ./lib/$(LIBRARY_NAME).a $(LDFLAGS)
 ARM64_LDFLAGS = ./lib/$(LIBRARY_NAME)_arm64.a $(LDFLAGS)
