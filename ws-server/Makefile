@@ -33,13 +33,11 @@ c_server_arm64: arm64
 	$(ARM64_CC) $(CFLAGS) -O2 -c ./c_examples/c_server.c -o c_server.o
 	$(ARM64_CC) -o c_server c_server.o $(ARM64_LDFLAGS)
 
-c_server: 
+c_server:
 ifeq ($(shell uname -m), x86_64)
-	$(X86_64_CC) $(CFLAGS) -O2 -c ./c_examples/c_server.c -o c_server.o
-	$(X86_64_CC) -o c_server c_server.o $(X86_64_LDFLAGS)
+	$(MAKE) c_server_x86_64
 else ifeq ($(shell uname -m), aarch64)
-	$(ARM64_CC) $(CFLAGS) -O2 -c ./c_examples/c_server.c -o c_server.o
-	$(ARM64_CC) -o c_server c_server.o $(ARM64_LDFLAGS)
+	$(MAKE) c_server_arm64
 else
 	@echo "Unsupported architecture"
 endif
