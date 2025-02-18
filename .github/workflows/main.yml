@@ -21,12 +21,11 @@ jobs:
           ls ${{ github.workspace }}
       - name: Build and test c_server
         if: runner.arch == 'X86_64' && matrix.arch == 'x86_64' || runner.arch == 'ARM64' && matrix.arch == 'arm64'
+        working-directory: ws-server
         run: |
           if [ "${{ matrix.arch }}" == "x86_64" ]; then
-            cd ws-server
             make c_server_x86_64
           elif [ "${{ matrix.arch }}" == "arm64" ]; then
-            cd ws-server
             make c_server_arm64
           fi
           ./c_server
