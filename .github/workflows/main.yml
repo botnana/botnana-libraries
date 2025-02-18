@@ -23,6 +23,7 @@ jobs:
         if: runner.arch == 'X86_64' && matrix.arch == 'x86_64' || runner.arch == 'ARM64' && matrix.arch == 'arm64'
         working-directory: ws-server
         run: |
+          pwd
           if [ "${{ matrix.arch }}" == "x86_64" ]; then
             make c_server_x86_64
           elif [ "${{ matrix.arch }}" == "arm64" ]; then
