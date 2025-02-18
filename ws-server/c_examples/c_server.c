@@ -50,8 +50,9 @@ int main()
     printf("Server Listen: %d\n", server_listen(server.ws));
 
     printf("Run server for 6 seconds\n");
-    while (6)
+    for (int i = 0; i < 6; i++)
     {
+        printf("%d\n", i);
         sleep(1);
     }
     return 0;
