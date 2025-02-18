@@ -1,19 +1,30 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Continuous integration with self-hosted runner
+run-name: ${{ github.actor }} is testing the code
 on: [workflow_dispatch, push]
 jobs:
-  Explore-GitHub-Actions:
+  build-and-test:
     runs-on: self-hosted
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a self-hosted ${{ runner.os }} server!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - run: echo "Triggered by a ${{ github.event_name }} event."
+      - run: echo "Running on a self-hosted ${{ runner.os }} server!"
+      - run: echo "Branch is ${{ github.ref }}, repository is ${{ github.repository }}."
       - name: Check out repository code
         uses: actions/checkout@v4
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - run: echo "🖥️ The workflow is now ready to test code on the runner."
       - name: List files in the repository
         run: |
           pwd
           ls ${{ github.workspace }}
+      - name: Build and test c_server
+        run: |
+          if [ "${{ matrix.arch }}" == "x86_64" ]; then
+            make c_server_x86_64
+          elif [ "${{ matrix.arch }}" == "arm64" ]; then
+            make c_server_arm64
+          fi
+          ./c_server
       - run: echo "🍏 This job's status is ${{ job.status }}."
