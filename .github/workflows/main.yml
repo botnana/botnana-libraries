@@ -4,9 +4,6 @@ on: [workflow_dispatch, push]
 jobs:
   build-and-test:
     runs-on: self-hosted
-    strategy:
-      matrix:
-        arch: [x86_64, arm64]
     steps:
       - run: echo "Triggered by a ${{ github.event_name }} event."
       - run: echo "Running on a self-hosted ${{ runner.os }} server!"
@@ -20,14 +17,8 @@ jobs:
           pwd
           ls ${{ github.workspace }}
       - name: Build and test c_server
-        if: runner.arch == 'X86_64' && matrix.arch == 'x86_64' || runner.arch == 'ARM64' && matrix.arch == 'arm64'
         working-directory: ws-server
         run: |
-          pwd
-          if [ "${{ matrix.arch }}" == "x86_64" ]; then
-            make c_server_x86_64
-          elif [ "${{ matrix.arch }}" == "arm64" ]; then
-            make c_server_arm64
-          fi
+          make c_server
           ./c_server
       - run: echo "🍏 This job's status is ${{ job.status }}."
