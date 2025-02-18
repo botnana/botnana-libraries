@@ -20,5 +20,6 @@ jobs:
         working-directory: ws-server
         run: |
           make c_server
+          echo Running c_server
           ./c_server
       - run: echo "🍏 This job's status is ${{ job.status }}."
