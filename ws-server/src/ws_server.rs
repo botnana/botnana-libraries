@@ -8,14 +8,14 @@ use std::{
 };
 use ws::{util::Token, CloseCode, Handler, Handshake, Message, Result};
 const EXPIRE: Token = Token(1);
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Callback Handler
 struct CallbackHandler {
     /// 用來回傳指標給使用者
     pointer: *mut c_void,
     /// callback 函式指標
-    callback: Box<Fn(*mut c_void, *const c_char) + Send>,
+    callback: Box<dyn Fn(*mut c_void, *const c_char) + Send>,
 }
 
 unsafe impl Send for CallbackHandler {}
@@ -45,7 +45,7 @@ impl WSServer {
         WSServer {
             broadcaster: None,
             max_connections: max_connections as usize,
-            port: port,
+            port,
             wdt_period_ms: 30_000,
             on_open_cb: Arc::new(Mutex::new(None)),
             on_error_cb: Arc::new(Mutex::new(None)),
@@ -65,19 +65,16 @@ impl WSServer {
         // Build WebSocket Server
         let websocket = ws::Builder::new()
             .with_settings(ws::Settings {
-                max_connections: max_connections,
+                max_connections,
                 ..ws::Settings::default()
             })
-            .build(move |out: ws::Sender| {
-                
-                WSServerHandler {
-                    sender: out.clone(),
-                    is_timeout: true,
-                    wdt_period_ms: wdt_period_ms,
-                    on_open_cb: on_open_cb.clone(),
-                    on_error_cb: on_error_cb.clone(),
-                    on_message_cb: on_message_cb.clone(),
-                }
+            .build(move |out: ws::Sender| WSServerHandler {
+                sender: out.clone(),
+                is_timeout: true,
+                wdt_period_ms,
+                on_open_cb: on_open_cb.clone(),
+                on_error_cb: on_error_cb.clone(),
+                on_message_cb: on_message_cb.clone(),
             })?;
 
         self.broadcaster = Some(websocket.broadcaster());
@@ -122,7 +119,7 @@ impl WSServer {
         F: Fn(*mut c_void, *const c_char) + Send + 'static,
     {
         *self.on_open_cb.lock().unwrap() = Some(CallbackHandler {
-            pointer: pointer,
+            pointer,
             callback: Box::new(handler),
         });
     }
@@ -133,7 +130,7 @@ impl WSServer {
         F: Fn(*mut c_void, *const c_char) + Send + 'static,
     {
         *self.on_error_cb.lock().unwrap() = Some(CallbackHandler {
-            pointer: pointer,
+            pointer,
             callback: Box::new(handler),
         });
     }
@@ -144,7 +141,7 @@ impl WSServer {
         F: Fn(*mut c_void, *const c_char) + Send + 'static,
     {
         *self.on_message_cb.lock().unwrap() = Some(CallbackHandler {
-            pointer: pointer,
+            pointer,
             callback: Box::new(handler),
         });
     }
@@ -185,9 +182,9 @@ pub extern "C" fn server_listen(server: Box<WSServer>) -> i32 {
     let s = Box::into_raw(server);
     unsafe {
         if (*s).listen().is_ok() {
-            return 0;
+            0
         } else {
-            return -1;
+            -1
         }
     }
 }
@@ -200,31 +197,34 @@ pub extern "C" fn server_close(server: Box<WSServer>) -> i32 {
     let s = Box::into_raw(server);
     unsafe {
         if (*s).close().is_ok() {
-            return 0;
+            0
         } else {
-            return -1;
+            -1
         }
     }
 }
 
 /// WS Server broadcaster (會送出訊息到所有連上的 Client)
-/// @`server`: WS Server descriptor
-/// @`msg`: output message
-/// return: 0 in case of success, else < 0
+///
+/// # Parameters
+/// - `server`: WS Server descriptor
+/// - `msg`: output message
+///
+/// # Return
+/// - 0 in case of success, else < 0
+///
+/// # Safety
+/// - `msg` must be a valid C string
 #[no_mangle]
-pub extern "C" fn server_broadcaster(server: Box<WSServer>, msg: *const c_char) -> i32 {
-    let message = unsafe {
-        assert!(!msg.is_null());
-        str::from_utf8(CStr::from_ptr(msg).to_bytes()).unwrap()
-    };
+pub unsafe extern "C" fn server_broadcaster(server: Box<WSServer>, msg: *const c_char) -> i32 {
+    assert!(!msg.is_null());
+    let message = str::from_utf8(CStr::from_ptr(msg).to_bytes()).unwrap();
     let s = Box::into_raw(server);
-    unsafe {
-        if (*s).broadcaster(message).is_ok() {
-            return 0;
-        } else {
-            return -1;
-        }
-    };
+    if (*s).broadcaster(message).is_ok() {
+        0
+    } else {
+        -1
+    }
 }
 
 /// Set on_open callback
@@ -234,10 +234,13 @@ pub extern "C" fn server_broadcaster(server: Box<WSServer>, msg: *const c_char) 
 pub extern "C" fn server_set_on_open_cb(
     server: Box<WSServer>,
     pointer: *mut c_void,
-    cb: fn(*mut c_void, *const c_char),
+    cb: extern "C" fn(*mut c_void, *const c_char),
 ) {
     let s = Box::into_raw(server);
-    unsafe { (*s).set_on_open_cb(pointer, cb) };
+    let closure = move |pointer: *mut c_void, msg: *const c_char| {
+        cb(pointer, msg);
+    };
+    unsafe { (*s).set_on_open_cb(pointer, closure) };
 }
 
 /// Set on_error callback
@@ -247,10 +250,13 @@ pub extern "C" fn server_set_on_open_cb(
 pub extern "C" fn server_set_on_error_cb(
     server: Box<WSServer>,
     pointer: *mut c_void,
-    cb: fn(*mut c_void, *const c_char),
+    cb: extern "C" fn(*mut c_void, *const c_char),
 ) {
     let s = Box::into_raw(server);
-    unsafe { (*s).set_on_error_cb(pointer, cb) };
+    let closure = move |pointer: *mut c_void, msg: *const c_char| {
+        cb(pointer, msg);
+    };
+    unsafe { (*s).set_on_error_cb(pointer, closure) };
 }
 
 /// Set on_message callback
@@ -260,10 +266,13 @@ pub extern "C" fn server_set_on_error_cb(
 pub extern "C" fn server_set_on_message_cb(
     server: Box<WSServer>,
     pointer: *mut c_void,
-    cb: fn(*mut c_void, *const c_char),
+    cb: extern "C" fn(*mut c_void, *const c_char),
 ) {
     let s = Box::into_raw(server);
-    unsafe { (*s).set_on_message_cb(pointer, cb) };
+    let closure = move |pointer: *mut c_void, msg: *const c_char| {
+        cb(pointer, msg);
+    };
+    unsafe { (*s).set_on_message_cb(pointer, closure) };
 }
 
 /// WS Server Handler
@@ -303,7 +312,7 @@ impl WSServerHandler {
     /// Execute on_open callback
     fn execute_on_open_cb(&self) {
         if let Some(ref cb) = *self.on_open_cb.lock().expect("execute_on_open_cb") {
-            let mut temp_msg = String::from("WS Connected".to_owned()).into_bytes();
+            let mut temp_msg = "WS Connected".to_owned().into_bytes();
             temp_msg.push(0);
             let msg = CStr::from_bytes_with_nul(temp_msg.as_slice())
                 .expect("toCstr")
@@ -327,7 +336,7 @@ impl Handler for WSServerHandler {
         self.is_timeout = false;
         if let ws::Message::Text(text) = msg {
             if let Some(ref cb) = *self.on_message_cb.lock().unwrap() {
-                if text.len() > 0 {
+                if !text.is_empty() {
                     let mut temp_msg = text.into_bytes();
                     // 如果不是換行結束的,補上換行符號,如果沒有在 C 的輸出有問題
                     if temp_msg[temp_msg.len() - 1] != 10 {
