@@ -1,5 +1,5 @@
-name: Continuous integration with self-hosted runner
-run-name: ${{ github.actor }} is testing the code
+name: CI with self-hosted runner
+run-name: ${{ github.actor }} is testing branch ${{ github.ref }}
 on: [workflow_dispatch, push]
 jobs:
   build-and-test:
@@ -14,11 +14,14 @@ jobs:
       - run: echo "🖥️ The workflow is now ready to test code on the runner."
       - name: List files in the repository
         run: |
-          pwd
+          echo "$USER@$HOSTNAME:$PWD"
           ls ${{ github.workspace }}
-      - name: Build and test c_server
+      - name: Build c_server
         working-directory: ws-server
         run: |
           make c_server
+      - name: Test c_server
+        working-directory: ws-server
+        run: |
           ./c_server
       - run: echo "🍏 This job's status is ${{ job.status }}."
